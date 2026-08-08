@@ -1,13 +1,17 @@
 import yaml
+import os
 
 from .models import Node, PlacementMap, Seed
 from ..utils.canonical_id import slugify
 
 def write_node(node: Node, output_path: str) -> None:
+    node_dir = f"{output_path}/nodes/"
+    if not os.path.exists(node_dir):
+        os.mkdir(node_dir)
     cid = node.canonical_id
     parts = cid.split('.')
-    slug = slugify(parts[-1])
-    node_path = f"{output_path}/{slug}.yaml"
+    bits = [slugify(part) for part in parts]
+    node_path = f"{output_path}/nodes/{bits[-1]}.yaml"
     try:
         content = node.model_dump()
         with open(node_path, 'w') as y:
