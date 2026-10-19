@@ -9,7 +9,7 @@ def write_node(node: Node, output_path: str) -> None:
     if not os.path.exists(node_dir):
         os.mkdir(node_dir)
     cid = node.canonical_id
-    parts = cid.split('.')
+    parts = cid.split(".")
     bits = [slugify(part) for part in parts]
     node_path = f"{output_path}/nodes/{bits[-1]}.yaml"
     try:
