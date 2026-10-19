@@ -106,7 +106,7 @@ def run_test(
     console.rule("[bold cyan]Step 2 — Agent placement loop (held-out validation)[/]")
 
     nodes_dir = output_path / "nodes"
-    llm_run = TaxonomyLLM(api_key=api_key, model="claude-haiku-4-5-20251001")
+    llm_run = TaxonomyLLM(api_key=api_key, model=model)
     run_flow = RunFlow(llm_run)
 
     _BATCH = 50
