@@ -27,7 +27,7 @@ from ..taxonomy.models import (
     PlacementMap,
     Seed,
     SeedContext,
-    SeedEdgeCase,
+    EdgeCase,
     SeedLevel,
     UnresolvedValue,
 )
