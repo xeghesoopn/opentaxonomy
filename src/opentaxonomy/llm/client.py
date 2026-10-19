@@ -1,44 +1,40 @@
-from typing import TypeVar, Type
+import lmstudio as lms
 
-import anthropic
+from typing import TypeVar, Type
 from pydantic import BaseModel
+
+from rich import print as rprint
 
 T = TypeVar("T", bound=BaseModel)
 
 
 class TaxonomyLLM:
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6"):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
+    """
+    A large language model through LMStudio, used for a discrete
+    text-processing task.
+    - api_key (str): Not used, for code compatibility only.
+    - model (str): The name of the model to use in LMStudio.
+    """
+    def __init__(self, api_key: str = "", model: str = "qwen3.5-27b"):
+        self.client = lms.llm(model)
 
     def call_structured(
         self,
         system: str,
         user: str,
-        tool_name: str,
-        tool_description: str,
         input_schema: dict,
         max_tokens: int = 8096,
     ) -> dict:
-        """Call Claude with forced tool use to get structured JSON output."""
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-            tools=[
-                {
-                    "name": tool_name,
-                    "description": tool_description,
-                    "input_schema": input_schema,
-                }
-            ],
-            tool_choice={"type": "tool", "name": tool_name},
-        )
-        for block in response.content:
-            if block.type == "tool_use" and block.name == tool_name:
-                return block.input
-        raise RuntimeError(f"LLM did not return expected tool '{tool_name}'")
+        """ Call the LMStudio client to get a structured .json output. """
+        chat = lms.Chat(system) # Always spawn a new chat object for a clean history.
+        content = {"type": "string", "text": user}
+        chat.add_user_entry(content)
+        response = self.client.respond(
+            chat,
+            input_schema,
+            config={"maxTokens": max_tokens}
+            )
+        return response.parsed
 
     def complete(
         self,
@@ -46,17 +42,22 @@ class TaxonomyLLM:
         system: str,
         user: str,
         max_tokens: int = 8096,
+        max_tries: int = 3
     ) -> T:
-        """Call Claude and parse the response into a Pydantic model via tool use."""
+        """ Wrapper to validate the response, and to try again in case of failure. """
         schema = schema_class.model_json_schema()
         # Remove the Pydantic-generated title — cleaner for tool calling
         schema.pop("title", None)
-        result = self.call_structured(
-            system=system,
-            user=user,
-            tool_name="output",
-            tool_description=f"Return a {schema_class.__name__}",
-            input_schema=schema,
-            max_tokens=max_tokens,
-        )
-        return schema_class.model_validate(result)
+        for try in range(max_tries):
+            try:
+                result = self.call_structured(
+                    system=system,
+                    user=user,
+                    input_schema=schema,
+                    max_tokens=max_tokens,
+                )
+                rprint(result) # Print the result
+                return schema_class.model_validate(result)
+            except Exception:
+                pass
+        raise ValueError(f"Failed to validate LLM's response after {max_tries} attempts.")
