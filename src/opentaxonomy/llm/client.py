@@ -26,12 +26,11 @@ class TaxonomyLLM:
         max_tokens: int = 8096,
     ) -> dict:
         """ Call the LMStudio client to get a structured .json output. """
-        chat = lms.Chat(system) # Always spawn a new chat object for a clean history.
-        content = {"type": "string", "text": user}
-        chat.add_user_entry(content)
+        chat = lms.Chat(initial_prompt=system) # Always spawn a new chat object for a clean history.
+        chat.add_user_message(user)
         response = self.client.respond(
             chat,
-            input_schema,
+            response_format=input_schema,
             config={"maxTokens": max_tokens}
             )
         return response.parsed
@@ -58,6 +57,6 @@ class TaxonomyLLM:
                 )
                 rprint(result) # Print the result
                 return schema_class.model_validate(result)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Failed to validate LLM's response: {e}")
         raise ValueError(f"Failed to validate LLM's response after {max_tries} attempts.")
