@@ -48,7 +48,7 @@ class TaxonomyLLM:
         schema = schema_class.model_json_schema()
         # Remove the Pydantic-generated title — cleaner for tool calling
         schema.pop("title", None)
-        for try in range(max_tries):
+        for i in range(max_tries):
             try:
                 result = self.call_structured(
                     system=system,
