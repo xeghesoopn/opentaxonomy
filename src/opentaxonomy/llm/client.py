@@ -1,8 +1,7 @@
-import lmstudio as lms
-
 from typing import TypeVar, Type, Any
-from pydantic import BaseModel
 
+import lmstudio as lms
+from pydantic import BaseModel
 from rich import print as rprint
 
 T = TypeVar("T", bound=BaseModel)
@@ -10,9 +9,9 @@ T = TypeVar("T", bound=BaseModel)
 
 class TaxonomyLLM:
     """
-    A large language model provided by LMStudio, used for a discrete
-    text processing task.
-    - api_key (str): Not used, for code compatibility only.
+    A large language model provided by the LMStudio client, used for
+    a discrete text processing task.
+    - api_key (str): Not used here, for code compatibility only.
     - model (str): The name of the model to use in LMStudio.
     """
 
@@ -26,7 +25,7 @@ class TaxonomyLLM:
         input_schema: dict[str, Any],
         max_tokens: int = 8096,
     ) -> dict[str, Any]:
-        """ Call the LMStudio client to get a structured .json output. """
+        """ Call LMStudio to get a structured .json output. """
         chat = lms.Chat(initial_prompt=system)
         chat.add_entry(role="user", content=user)
         response = self.client.respond(
@@ -34,9 +33,7 @@ class TaxonomyLLM:
             response_format=input_schema,
             config={"maxTokens": max_tokens}
             )
-        result = response.parsed
-        rprint(result)
-        return result
+        return response.parsed
 
     def complete(
         self,
@@ -44,19 +41,20 @@ class TaxonomyLLM:
         system: str,
         user: str,
         max_tokens: int = 8096,
-        max_tries: int = 3
+        max_tries: int = 2
     ) -> T:
-        """ Wrapper to validate the response, and to try again in case of failure. """
+        """ Call LMStudio and parse the response into a Pydantic model. """
         input_schema = schema_class.model_json_schema()
         for i in range(max_tries):
+            result = self.call_structured(
+                system,
+                user,
+                input_schema,
+                max_tokens
+                )
+            rprint(result)
             try:
-                result = self.call_structured(
-                    system,
-                    user,
-                    input_schema,
-                    max_tokens
-                    )
                 return schema_class.model_validate(result)
-            except Exception as e:
-                print(f"Failed to validate LLM's response: {e}")
+            except Exception:
+                pass
         raise ValueError(f"Failed to validate LLM's response after {max_tries} attempts.")
