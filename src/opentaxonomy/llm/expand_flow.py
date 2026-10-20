@@ -30,9 +30,8 @@ from ..taxonomy.models import (
     PlacementMap,
     Seed,
     SeedLevel,
-    UnresolvedValue,
 )
-from ..utils.canonical_id import content_hash, safe_child_id, slugify
+from ..utils.canonical_id import content_hash, safe_child_id
 from .client import TaxonomyLLM
 from .prompts import (
     SYSTEM_PRIMA_SEED,

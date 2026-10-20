@@ -16,10 +16,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional
 
-import yaml
 from rich.console import Console
 
 from ..taxonomy.models import (
+    EdgeCase,
+    DecisionRecord,
     Node,
     NodeCriteria,
     Placement,
@@ -27,11 +28,10 @@ from ..taxonomy.models import (
     PlacementMap,
     Seed,
     SeedContext,
-    EdgeCase,
     SeedLevel,
     UnresolvedValue,
 )
-from ..utils.canonical_id import slugify
+from ..utils.canonical_id import slugify, make_canonical_id
 from .client import TaxonomyLLM
 from .prompts import (
     SYSTEM_PRIMA_SEED,
@@ -55,8 +55,7 @@ console = Console()
 
 _NORMALIZE_BATCH = 50
 _PLACEMENT_BATCH = 50
-_BATCH_SLEEP = 15  # seconds between batches to stay under API rate limits
-
+_BATCH_SLEEP = 0  # seconds between batches to stay under API rate limits
 
 # ── Internal tree node ────────────────────────────────────────────────────────
 
@@ -73,8 +72,8 @@ class _Node:
     question: str = ""
     criteria_includes: list[str] = field(default_factory=list)
     criteria_excludes: list[str] = field(default_factory=list)
-    edge_cases: list = field(default_factory=list)
-    decision_record: Optional[object] = None
+    edge_cases: list[EdgeCase] = field(default_factory=list)
+    decision_record: Optional[DecisionRecord] = None
 
 
 # ── Flow ──────────────────────────────────────────────────────────────────────
@@ -156,7 +155,7 @@ class CreateFlow:
             if not node.children:
                 node.is_leaf = True
                 return
-
+            
             # Values not assigned to any sub-branch stay on this node as members
             assigned = {m for c in node.children for m in c.members}
             node.members = [m for m in node.members if m not in assigned]
@@ -347,7 +346,7 @@ def _pad_to_target_depth(all_nodes: list[_Node], max_depth: int) -> None:
 
 
 def _build_child(b: BranchDef, parent: _Node) -> _Node:
-    canonical_id = f"{parent.canonical_id}.{slugify(b.key)}"
+    canonical_id = make_canonical_id(prefix=parent.canonical_id, path=b.key.split("."))
     return _Node(
         key=b.key,
         label=b.label,

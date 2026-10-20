@@ -24,7 +24,7 @@ console = Console()
 
 _NORMALIZE_BATCH = 50
 _PLACEMENT_BATCH = 50
-_BATCH_SLEEP = 15  # seconds between batches to stay under API rate limits
+_BATCH_SLEEP = 0  # seconds between batches to stay under API rate limits
 
 
 class RunFlow:
