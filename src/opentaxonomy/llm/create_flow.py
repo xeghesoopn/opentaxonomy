@@ -53,8 +53,8 @@ from .schemas import (
 
 console = Console()
 
-_NORMALIZE_BATCH = 50
-_PLACEMENT_BATCH = 50
+_NORMALIZE_BATCH = 15
+_PLACEMENT_BATCH = 5
 _BATCH_SLEEP = 0  # seconds between batches to stay under API rate limits
 
 # ── Internal tree node ────────────────────────────────────────────────────────
